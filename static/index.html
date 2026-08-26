@@ -1,1 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f14">
+<title>BIG.BULL Live</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+:root{--bg:#0b0f14;--panel:#111821;--panel2:#151f2b;--text:#f5f7fa;--muted:#8c98a7;--green:#27d17f;--red:#ff5964;--gold:#f2c94c;--line:#233142}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+.app{max-width:760px;margin:auto;min-height:100vh;padding-bottom:76px}.topbar{padding:18px 15px 13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b0f14;z-index:5}
+.brand{font-size:24px;font-weight:900}.sub{font-size:12px;color:var(--muted)}.live{font-size:11px;color:var(--muted);display:flex;gap:7px;align-items:center}.dot{width:9px;height:9px;border-radius:50%;background:var(--red)}.dot.on{background:var(--green)}
+main{padding:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px}.row{display:flex;justify-content:space-between;align-items:center}.eyebrow{font-size:11px;color:var(--muted);letter-spacing:1px}h1{margin:4px 0;font-size:25px}
+.badge{padding:7px 10px;border-radius:999px;background:#303641;font-size:11px;font-weight:900}.buybadge{background:#163d2a;color:var(--green)}.sellbadge{background:#482026;color:var(--red)}.donebadge{background:#3d3417;color:var(--gold)}
+.grid2,.trade-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.metric,.side,.recovery{background:var(--panel2);padding:12px;border-radius:12px;border:1px solid var(--line)}.metric span{display:block;color:var(--muted);font-size:11px}.title{font-weight:900;margin-bottom:8px}.buy .title{color:var(--green)}.sell .title{color:var(--red)}
+.side div:not(.title){display:flex;justify-content:space-between;font-size:13px;margin:6px 0}.side span{color:var(--muted)}.recovery{margin-top:12px}.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}.steps span{text-align:center;padding:9px;border-radius:9px;background:#0c1219;color:var(--muted);font-weight:800}.steps span.on{color:var(--gold);outline:1px solid var(--gold)}
+.head{display:flex;justify-content:space-between;align-items:center;margin:19px 2px 9px}.head h2{font-size:16px;margin:0}.small{font-size:11px;color:var(--muted)}
+.history{display:grid;gap:8px}.hist{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:11px}.hist .top{display:flex;justify-content:space-between;gap:10px}.meta{color:var(--muted);font-size:12px;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.keybox{background:#111821;border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}.keybox input{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:#0c1219;color:white}.keybox button{width:100%;margin-top:8px;padding:11px;border:0;border-radius:10px;background:var(--gold);font-weight:900}
+@media(max-width:520px){.trade-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+<div><div class="brand">BIG.BULL</div><div class="sub">LIVE SIGNAL APP</div></div>
+<div class="live"><span id="dot" class="dot"></span><span id="conn">CONNECTING</span></div>
+</header>
+<main>
+<div id="keybox" class="keybox" style="display:none">
+<b>App Key</b><div class="small" style="margin:5px 0 8px">Enter APP_VIEW_KEY once.</div>
+<input id="keyInput" type="password" placeholder="App view key">
+<button onclick="saveKey()">CONNECT</button>
+</div>
 
+<section class="card">
+<div class="row">
+<div><div class="eyebrow">ACTIVE SETUP</div><h1 id="symbol">—</h1></div>
+<span id="badge" class="badge">WAITING</span>
+</div>
+<div class="grid2">
+<div class="metric"><span>Timeframe</span><strong id="tf">—</strong></div>
+<div class="metric"><span>Range</span><strong id="range">—</strong></div>
+</div>
+<div class="trade-grid">
+<div class="side buy"><div class="title">BUY SETUP</div><div><span>Entry</span><strong id="be">—</strong></div><div><span>SL</span><strong id="bsl">—</strong></div><div><span>TP</span><strong id="btp">—</strong></div></div>
+<div class="side sell"><div class="title">SELL SETUP</div><div><span>Entry</span><strong id="se">—</strong></div><div><span>SL</span><strong id="ssl">—</strong></div><div><span>TP</span><strong id="stp">—</strong></div></div>
+</div>
+<div class="recovery">
+<div class="row"><span>Recovery</span><strong id="step">Step 0 / 4</strong></div>
+<div class="steps"><span id="s1">0.01</span><span id="s2">0.03</span><span id="s3">0.06</span><span id="s4">0.15</span></div>
+</div>
+</section>
+
+<div class="head"><h2>Signal History</h2><span id="updated" class="small">—</span></div>
+<div id="history" class="history"></div>
+</main>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+let key=localStorage.getItem("bigbull_view_key")||"";
+function h(){return key?{"X-App-Key":key}:{}}
+function fmt(v){return v===null||v===undefined||v===""?"—":v}
+function badgeClass(s){s=(s||"").toUpperCase();if(s.includes("BUY"))return"badge buybadge";if(s.includes("SELL")||s.includes("FAILED"))return"badge sellbadge";if(s.includes("TP")||s.includes("CLOSED")||s.includes("SKIPPED"))return"badge donebadge";return"badge"}
+function renderState(s){
+ $("symbol").textContent=fmt(s.symbol);$("tf").textContent=fmt(s.timeframe);$("range").textContent=fmt(s.setup_range);
+ $("be").textContent=fmt(s.buy_entry);$("bsl").textContent=fmt(s.buy_sl);$("btp").textContent=fmt(s.buy_tp);
+ $("se").textContent=fmt(s.sell_entry);$("ssl").textContent=fmt(s.sell_sl);$("stp").textContent=fmt(s.sell_tp);
+ $("badge").textContent=fmt(s.status);$("badge").className=badgeClass(s.status);
+ const st=Number(s.step||0);$("step").textContent=`Step ${st} / 4`;for(let i=1;i<=4;i++)$("s"+i).classList.toggle("on",i===st);
+ $("updated").textContent=s.updated_at?new Date(s.updated_at).toLocaleString():"—";
+}
+function renderHistory(a){
+ $("history").innerHTML=a.map(x=>`<div class="hist"><div class="top"><b>${x.event.replaceAll("_"," ")}</b><span>${x.step?("Step "+x.step):""}</span></div><div class="meta">${fmt(x.symbol)} • ${fmt(x.timeframe)} • ${new Date(x.created_at).toLocaleString()}</div></div>`).join("");
+}
+function saveKey(){key=$("keyInput").value.trim();localStorage.setItem("bigbull_view_key",key);$("keybox").style.display="none";load()}
+async function load(){
+ try{
+  const [rs,rh]=await Promise.all([fetch("/api/state",{headers:h()}),fetch("/api/history?limit=30",{headers:h()})]);
+  if(rs.status===401||rh.status===401){$("keybox").style.display="block";$("dot").classList.remove("on");$("conn").textContent="KEY REQUIRED";return}
+  if(!rs.ok||!rh.ok)throw new Error("api");
+  renderState(await rs.json());renderHistory(await rh.json());
+  $("dot").classList.add("on");$("conn").textContent="LIVE";
+ }catch(e){$("dot").classList.remove("on");$("conn").textContent="OFFLINE"}
+}
+if("serviceWorker"in navigator)navigator.serviceWorker.register("/sw.js").catch(()=>{});
+load();setInterval(load,2500);
+</script>
+</body>
+</html>
