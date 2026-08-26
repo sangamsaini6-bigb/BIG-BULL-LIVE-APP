@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: big-bull-live-app
+    runtime: docker
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: APP_WEBHOOK_KEY
+        generateValue: true
+      - key: APP_VIEW_KEY
+        generateValue: true
