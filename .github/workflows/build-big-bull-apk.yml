@@ -4,8 +4,11 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'bigbull-project-small.zip'
+      - 'android/**'
       - '.github/workflows/build-big-bull-apk.yml'
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -18,21 +21,23 @@ jobs:
           java-version: '17'
       - uses: android-actions/setup-android@v3
       - name: Install Android SDK 35
-        run: yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.9'
-      - name: Unpack Android project
-        run: |
-          rm -rf android
-          unzip -q bigbull-project-small.zip
-          mv android-app-final android
-      - name: Build debug APK
+      - name: Build APK
         working-directory: android
         run: gradle assembleDebug --stacktrace
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
+      - name: Publish APK to repository
+        run: |
+          mkdir -p dist
+          cp android/app/build/outputs/apk/debug/app-debug.apk dist/BIG_BULL_Daily_PnL.apk
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add dist/BIG_BULL_Daily_PnL.apk
+          git commit -m 'Build BIG BULL APK [skip ci]' || true
+          git push
+      - uses: actions/upload-artifact@v4
         with:
           name: BIG_BULL_Daily_PnL_APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
